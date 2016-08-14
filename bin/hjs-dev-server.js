@@ -10,6 +10,8 @@ var webpack = require('webpack')
 var assign = require('lodash.assign')
 var compress = require('compression')
 var httpProxyMiddleware = require('http-proxy-middleware')
+var Dashboard = require('webpack-dashboard')
+var DashboardPlugin = require('webpack-dashboard/plugin')
 
 var configFile = process.argv[2] || 'webpack.config.js'
 var config
@@ -52,6 +54,10 @@ if (https) {
 
 var compiler = webpack(config)
 
+var dashboard = new Dashboard()
+
+compiler.apply(new DashboardPlugin(dashboard.setData))
+
 if (serverConfig.proxy) {
   if (!Array.isArray(serverConfig.proxy)) {
     serverConfig.proxy = [serverConfig.proxy]
@@ -70,10 +76,15 @@ if (serverConfig.historyApiFallback) {
   }))
 }
 
+serverConfig.quiet = true
+serverConfig.publicPath = config.output.publicPath
+
 app.use(require('webpack-dev-middleware')(compiler, serverConfig))
 
 if (serverConfig.hot) {
-  app.use(require('webpack-hot-middleware')(compiler))
+  app.use(require('webpack-hot-middleware')(compiler, {
+    log: () => {}
+  }))
 }
 
 if (serverConfig.contentBase) {
